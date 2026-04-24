@@ -172,23 +172,6 @@ ShuttleElite/
 
 ---
 
-### Backend — MVC Structure
-
-
-velora-backend/
-│
-├── config/
-│   └── db.js
-│
-├── controllers/
-├── models/
-├── routes/
-├── middleware/
-│
-├── .env
-├── .gitignore
-├── package.json
-└── server.js
 ## 🚀 Future Scope
 
 - AI-based demand prediction  
