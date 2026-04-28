@@ -1,43 +1,40 @@
-import { Calendar, ChevronRight, Bus, Download, Filter } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, ChevronRight, Bus, Download, Filter, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
 
 const RideHistoryPage = () => {
   const navigate = useNavigate();
+  const [rides, setRides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const rides = [
-    {
-      id: 'REQ-9980',
-      date: '24 Apr 2026',
-      time: '09:15',
-      pickup: 'HSR Layout, Block 2',
-      drop: 'Main Gate, Sector 62',
-      status: 'Completed',
-      shuttle: 'SH-102',
-      carbon: '3.2kg'
-    },
-    {
-      id: 'REQ-9952',
-      date: '23 Apr 2026',
-      time: '18:40',
-      pickup: 'Main Gate, Sector 62',
-      drop: 'HSR Layout, Block 2',
-      status: 'Completed',
-      shuttle: 'SH-204',
-      carbon: '2.8kg'
-    },
-    {
-      id: 'REQ-9921',
-      date: '22 Apr 2026',
-      time: '09:10',
-      pickup: 'HSR Layout, Block 2',
-      drop: 'Main Gate, Sector 62',
-      status: 'Completed',
-      shuttle: 'SH-102',
-      carbon: '3.1kg'
+  useEffect(() => {
+    fetchRides();
+  }, []);
+
+  const fetchRides = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:5000/api/rides/history", {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setRides(data.rides);
+      } else {
+        setError(data.message || "Failed to load rides");
+      }
+    } catch (err) {
+      setError("Failed to connect to backend");
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-10">
@@ -69,7 +66,17 @@ const RideHistoryPage = () => {
 
       {/* History List */}
       <div className="space-y-6">
-        {rides.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <p className="text-text-muted font-bold animate-pulse">Fetching your ride history...</p>
+          </div>
+        ) : error ? (
+          <Card className="border-red-500/20 bg-red-500/5 py-10 text-center">
+            <p className="text-red-500 font-bold mb-4">{error}</p>
+            <Button onClick={fetchRides} variant="secondary">Try Again</Button>
+          </Card>
+        ) : rides.length === 0 ? (
           <Card className="text-center py-20 bg-white/[0.02]">
             <div className="flex flex-col items-center gap-4">
               <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center">
@@ -86,8 +93,8 @@ const RideHistoryPage = () => {
           </Card>
         ) : rides.map((ride) => (
           <Card 
-            key={ride.id} 
-            onClick={() => alert(`Showing receipt and details for ride ${ride.id}`)}
+            key={ride._id} 
+            onClick={() => alert(`Showing receipt and details for ride ${ride._id}`)}
             className="group relative overflow-hidden transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -97,7 +104,7 @@ const RideHistoryPage = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xl font-black text-text-main tracking-tight">{ride.shuttle}</span>
+                    <span className="text-xl font-black text-text-main tracking-tight">SH-Elite</span>
                     <span className="text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">
                       {ride.status}
                     </span>
@@ -126,10 +133,10 @@ const RideHistoryPage = () => {
               <div className="flex items-center justify-between md:flex-col md:items-end gap-2 md:min-w-[120px]">
                 <div className="text-right">
                   <p className="text-[10px] font-black text-text-dim uppercase tracking-widest">CO2 Saved</p>
-                  <p className="text-lg font-black text-primary tracking-tighter">{ride.carbon}</p>
+                  <p className="text-lg font-black text-primary tracking-tighter">3.2kg</p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-[10px] font-mono text-text-dim font-bold">{ride.id}</span>
+                  <span className="text-[10px] font-mono text-text-dim font-bold">REQ-{ride._id.slice(-4).toUpperCase()}</span>
                   <div className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl flex items-center justify-center text-text-muted group-hover:bg-primary group-hover:text-black group-hover:border-primary transition-all">
                     <ChevronRight className="w-5 h-5" />
                   </div>

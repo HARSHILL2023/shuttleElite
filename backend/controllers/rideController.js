@@ -5,16 +5,18 @@ const Ride = require('../models/Ride');
 // @access  Public (for now)
 const requestRide = async (req, res) => {
   try {
-    const { pickup, drop, date, time, userId } = req.body;
+    const { pickup, drop, date, time } = req.body;
 
     // Basic validation
     if (!pickup || !drop || !date || !time) {
       return res.status(400).json({ message: "Please provide all required fields" });
     }
 
+    const userId = req.user.userId;
+
     // Create new ride
     const newRide = new Ride({
-      user: userId || null, // Optional dummy userId
+      user: userId,
       pickup,
       drop,
       date,
@@ -37,6 +39,25 @@ const requestRide = async (req, res) => {
   }
 };
 
+// @desc    Get all ride history
+// @route   GET /api/rides/history
+// @access  Public (for now)
+const getRideHistory = async (req, res) => {
+  try {
+    const rides = await Ride.find({ user: req.user.userId }).sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      rides
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching ride history",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
-  requestRide
+  requestRide,
+  getRideHistory
 };

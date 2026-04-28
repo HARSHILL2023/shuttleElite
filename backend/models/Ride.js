@@ -4,7 +4,7 @@ const rideSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false // Optional for now as per instructions
+    required: true
   },
   pickup: {
     type: String,

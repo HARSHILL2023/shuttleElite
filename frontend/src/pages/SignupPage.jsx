@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Globe, AlertCircle, User, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import GoogleAuthButton from '../components/GoogleAuthButton';
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -60,7 +59,7 @@ const SignupPage = () => {
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-50" />
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-1000" />
-        
+
         <form onSubmit={handleSignup} className="space-y-8 relative z-10">
           <div className="space-y-3 text-center">
             <h2 className="text-4xl font-black text-text-main tracking-tighter">Join Elite</h2>
@@ -121,8 +120,8 @@ const SignupPage = () => {
           </div>
 
           <div className="space-y-5">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               loading={isLoading}
               loadingText="Creating account..."
               className="w-full h-14 text-lg font-black uppercase tracking-widest group shadow-[0_10px_30px_rgba(34,197,94,0.15)]"
@@ -130,25 +129,6 @@ const SignupPage = () => {
               Create Account
               {!isLoading && <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />}
             </Button>
-            
-            <div className="relative flex items-center justify-center py-2">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.05]"></div></div>
-              <span className="relative px-4 bg-card text-[10px] font-black text-text-dim uppercase tracking-[0.2em]">or register with</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <GoogleAuthButton />
-              
-              <Button 
-                variant="secondary" 
-                type="button" 
-                className="w-full h-14 bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.06] group"
-                onClick={() => alert('Redirecting to Corporate SSO...')}
-              >
-                <Globe className="mr-2 w-5 h-5 text-text-muted group-hover:text-primary transition-colors" />
-                Corporate SSO
-              </Button>
-            </div>
           </div>
 
           <div className="text-center pt-2">

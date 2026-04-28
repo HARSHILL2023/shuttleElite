@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Globe, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import GoogleAuthButton from '../components/GoogleAuthButton';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -120,26 +119,6 @@ const LoginPage = () => {
               Authenticate
               <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Button>
-
-            
-            <div className="relative flex items-center justify-center py-2">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.05]"></div></div>
-              <span className="relative px-4 bg-card text-[10px] font-black text-text-dim uppercase tracking-[0.2em]">or sign in with</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <GoogleAuthButton />
-              
-              <Button 
-                variant="secondary" 
-                type="button" 
-                className="w-full h-14 bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.06] group"
-                onClick={() => alert('Redirecting to Corporate SSO...')}
-              >
-                <Globe className="mr-2 w-5 h-5 text-text-muted group-hover:text-primary transition-colors" />
-                Corporate SSO
-              </Button>
-            </div>
           </div>
 
           <div className="text-center pt-2">
