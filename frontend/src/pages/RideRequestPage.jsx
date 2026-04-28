@@ -14,10 +14,41 @@ const RideRequestPage = () => {
     time: '',
     date: '2026-04-25',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/confirm');
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch("http://localhost:5000/api/rides/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          pickup: formData.pickup,
+          drop: formData.drop,
+          date: formData.date,
+          time: formData.time
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Ride booked successfully");
+        navigate('/confirm');
+      } else {
+        setError(data.message || "Failed to book ride");
+      }
+    } catch (err) {
+      setError("Something went wrong. Please check if backend is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -125,7 +156,19 @@ const RideRequestPage = () => {
             </p>
           </div>
 
-          <Button type="submit" className="w-full h-16 text-lg font-black uppercase tracking-widest">
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+              {error}
+            </div>
+          )}
+
+          <Button 
+            type="submit" 
+            loading={loading}
+            loadingText="Booking Shuttle..."
+            className="w-full h-16 text-lg font-black uppercase tracking-widest"
+          >
             Confirm Shuttle Request
           </Button>
         </form>
