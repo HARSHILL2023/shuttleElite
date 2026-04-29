@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import SEO from '../components/SEO';
+import apiClient from '../utils/apiClient';
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -29,26 +30,12 @@ const SignupPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name, email, password })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setIsSuccess(true);
-        setTimeout(() => {
-          navigate('/');
-        }, 2000);
-      } else {
-        setError(data.message || "Registration failed. Please check your details.");
-      }
+      await apiClient.post('/auth/signup', { name, email, password });
+      setIsSuccess(true);
+      setTimeout(() => { navigate('/'); }, 2000);
     } catch (err) {
-      setError("Connection error: Unable to reach the security server. Please try again later.");
+      const msg = err.response?.data?.message || 'Registration failed. Please check your details.';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

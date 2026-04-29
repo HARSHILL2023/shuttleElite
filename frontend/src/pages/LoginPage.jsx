@@ -6,6 +6,7 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
+import apiClient from '../utils/apiClient';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -27,29 +28,14 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Success: Store token and user info, then navigate
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success(`Welcome back, ${data.user.name}`);
-        navigate('/dashboard');
-      } else {
-        // Error: Show message from backend
-        setError(data.message || "Authentication failed. Please check your credentials.");
-      }
+      const { data } = await apiClient.post('/auth/login', { email, password });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      toast.success(`Welcome back, ${data.user.name}`);
+      navigate('/dashboard');
     } catch (err) {
-      // Network/Server Error
-      setError("Connection error: Unable to reach the security server. Please check your internet or try again later.");
+      const msg = err.response?.data?.message || 'Connection error. Please try again.';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
