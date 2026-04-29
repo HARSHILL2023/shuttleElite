@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+  import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Bus, Star, ShieldCheck } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';

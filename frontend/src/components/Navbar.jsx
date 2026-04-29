@@ -1,6 +1,6 @@
 
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Bus, History, Home, MapPin, LogOut } from 'lucide-react';
+import { Bus, History, Home, MapPin, LogOut, User } from 'lucide-react';
 import Button from './Button';
 
 const Navbar = () => {
@@ -11,7 +11,14 @@ const Navbar = () => {
     { name: 'Request', path: '/request', icon: Bus },
     { name: 'Tracking', path: '/tracking', icon: MapPin },
     { name: 'History', path: '/history', icon: History },
+    { name: 'Profile', path: '/profile', icon: User },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
+  };
 
   return (
     <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-lg md:max-w-7xl md:top-0 md:bottom-auto md:translate-x-0 md:left-0 md:right-0 md:w-full z-50">
@@ -39,7 +46,7 @@ const Navbar = () => {
                   ${isActive ? 'text-primary' : 'text-text-muted hover:text-text-main'}
                 `}
               >
-                <div className={`p-2 rounded-xl transition-all duration-300 ${item.path === window.location.pathname ? 'bg-primary/10' : 'group-hover:bg-white/5'}`}>
+                <div className={`p-2 rounded-xl transition-all duration-300 ${window.location.pathname === item.path ? 'bg-primary/10' : 'group-hover:bg-white/5'}`}>
                   <item.icon className="w-5 h-5 md:w-4 md:h-4" />
                 </div>
                 <span className="md:block">{item.name}</span>
@@ -51,7 +58,7 @@ const Navbar = () => {
             <Button 
               variant="ghost" 
               className="hidden md:flex items-center gap-2 group"
-              onClick={() => navigate('/')}
+              onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 group-hover:text-red-500 transition-colors" />
               <span className="group-hover:text-red-500 transition-colors">Logout</span>
@@ -60,6 +67,7 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
+
   );
 };
 

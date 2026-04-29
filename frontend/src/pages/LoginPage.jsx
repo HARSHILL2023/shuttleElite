@@ -36,8 +36,9 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Success: Store token and navigate
+        // Success: Store token and user info, then navigate
         localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
         navigate('/dashboard');
       } else {
         // Error: Show message from backend
