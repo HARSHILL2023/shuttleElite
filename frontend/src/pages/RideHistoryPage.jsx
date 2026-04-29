@@ -36,6 +36,37 @@ const RideHistoryPage = () => {
     }
   };
 
+  const handleUpdateStatus = async (e, rideId, newStatus) => {
+    e.stopPropagation(); // Prevent card click alert
+    try {
+      const res = await fetch(`http://localhost:5000/api/rides/${rideId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRides(rides.map(ride => ride._id === rideId ? { ...ride, status: newStatus } : ride));
+      } else {
+        alert(data.message || "Update failed");
+      }
+    } catch (err) {
+      alert("Error updating status");
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+      case 'confirmed': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'completed': return 'text-green-500 bg-green-500/10 border-green-500/20';
+      default: return 'text-primary bg-primary/10 border-primary/20';
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-10">
       {/* Page Header */}
@@ -105,7 +136,7 @@ const RideHistoryPage = () => {
                 <div>
                   <div className="flex items-center gap-3">
                     <span className="text-xl font-black text-text-main tracking-tight">SH-Elite</span>
-                    <span className="text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">
+                    <span className={`text-[10px] font-black border px-3 py-1 rounded-full uppercase tracking-widest ${getStatusColor(ride.status)}`}>
                       {ride.status}
                     </span>
                   </div>
@@ -130,13 +161,21 @@ const RideHistoryPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between md:flex-col md:items-end gap-2 md:min-w-[120px]">
+              <div className="flex items-center justify-between md:flex-col md:items-end gap-3 md:min-w-[140px]">
                 <div className="text-right">
                   <p className="text-[10px] font-black text-text-dim uppercase tracking-widest">CO2 Saved</p>
                   <p className="text-lg font-black text-primary tracking-tighter">3.2kg</p>
                 </div>
+                
                 <div className="flex items-center gap-4">
-                  <span className="text-[10px] font-mono text-text-dim font-bold">REQ-{ride._id.slice(-4).toUpperCase()}</span>
+                  {ride.status !== 'completed' && (
+                    <button 
+                      onClick={(e) => handleUpdateStatus(e, ride._id, 'completed')}
+                      className="text-[10px] font-black text-primary uppercase tracking-widest border border-primary/20 bg-primary/5 hover:bg-primary hover:text-black px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      Complete
+                    </button>
+                  )}
                   <div className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl flex items-center justify-center text-text-muted group-hover:bg-primary group-hover:text-black group-hover:border-primary transition-all">
                     <ChevronRight className="w-5 h-5" />
                   </div>

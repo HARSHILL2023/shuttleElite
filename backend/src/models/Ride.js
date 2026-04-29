@@ -24,6 +24,7 @@ const rideSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    enum: ["pending", "confirmed", "completed"],
     default: "pending"
   }
 }, { timestamps: true });
