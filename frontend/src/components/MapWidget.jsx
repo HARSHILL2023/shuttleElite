@@ -1,20 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { GoogleMap, useLoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect, useRef } from 'react';
+import { GoogleMap, useLoadScript, MarkerF, DirectionsRenderer } from '@react-google-maps/api';
+import { Navigation } from 'lucide-react';
 
 const libraries = ['places'];
-const mapContainerStyle = {
-  width: '100%',
-  height: '100%',
-};
+const mapContainerStyle = { width: '100%', height: '100%' };
 
-// Default center (Bangalore)
-const defaultCenter = {
-  lat: 12.9716,
-  lng: 77.5946
-};
-
-const MapWidget = ({ pickup = "Electronic City, Bangalore", drop = "Koramangala, Bangalore", status }) => {
+const MapWidget = ({ ride }) => {
+  const { driverLocation, pickupLocation, dropLocation, status } = ride;
+  
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
@@ -22,169 +15,163 @@ const MapWidget = ({ pickup = "Electronic City, Bangalore", drop = "Koramangala,
 
   const [directions, setDirections] = useState(null);
   const [map, setMap] = useState(null);
+  const [smoothDriverLoc, setSmoothDriverLoc] = useState(driverLocation);
+  const animationRef = useRef(null);
 
+  // Directions logic
   useEffect(() => {
-    if (isLoaded && pickup && drop) {
+    if (isLoaded && pickupLocation?.lat && dropLocation?.lat) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
         {
-          origin: pickup,
-          destination: drop,
+          origin: new window.google.maps.LatLng(pickupLocation.lat, pickupLocation.lng),
+          destination: new window.google.maps.LatLng(dropLocation.lat, dropLocation.lng),
           travelMode: window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK) {
             setDirections(result);
-          } else {
-            console.error(`error fetching directions ${status}`);
           }
         }
       );
     }
-  }, [isLoaded, pickup, drop]);
+  }, [isLoaded, pickupLocation, dropLocation]);
 
-  const onMapLoad = (mapInstance) => {
-    setMap(mapInstance);
-  };
+  // Smooth Movement (LERP)
+  useEffect(() => {
+    if (!driverLocation?.lat) return;
+    if (!smoothDriverLoc) {
+      setSmoothDriverLoc(driverLocation);
+      return;
+    }
 
-  if (loadError) return <div className="h-full w-full flex items-center justify-center text-red-500 bg-card rounded-[2rem]">Error loading map</div>;
-  if (!isLoaded) return (
-    <div className="h-full w-full bg-card animate-pulse rounded-[2.5rem] flex items-center justify-center">
-      <div className="text-center space-y-3">
-        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-        <p className="text-text-muted font-black text-[10px] uppercase tracking-[0.2em] animate-pulse">Initializing Elite Maps...</p>
-      </div>
-    </div>
-  );
+    const startTime = Date.now();
+    const duration = 2000;
+    const startLoc = { ...smoothDriverLoc };
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const currentLat = startLoc.lat + (driverLocation.lat - startLoc.lat) * progress;
+      const currentLng = startLoc.lng + (driverLocation.lng - startLoc.lng) * progress;
+      
+      setSmoothDriverLoc({ lat: currentLat, lng: currentLng });
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [driverLocation]);
+
+  // Fit view logic
+  useEffect(() => {
+    if (map && isLoaded) {
+      const bounds = new window.google.maps.LatLngBounds();
+      let hasData = false;
+      if (pickupLocation?.lat) { bounds.extend(pickupLocation); hasData = true; }
+      if (dropLocation?.lat) { bounds.extend(dropLocation); hasData = true; }
+      if (smoothDriverLoc?.lat) { bounds.extend(smoothDriverLoc); hasData = true; }
+      
+      if (hasData) {
+        map.fitBounds(bounds, { top: 100, bottom: 250, left: 50, right: 50 });
+      }
+    }
+  }, [map, isLoaded, pickupLocation, dropLocation, smoothDriverLoc]);
+
+  const onMapLoad = (mapInstance) => setMap(mapInstance);
+
+  if (loadError) return <div className="h-full w-full bg-slate-50 rounded-3xl flex items-center justify-center text-red-500 font-bold">Map Loading Failed</div>;
+  if (!isLoaded) return <div className="h-full w-full bg-slate-50 animate-pulse rounded-3xl flex items-center justify-center font-bold text-slate-300">Initializing Map Engine...</div>;
 
   return (
-    <div className="h-[400px] md:h-[500px] w-full rounded-[2.5rem] overflow-hidden border border-white/5 relative group">
+    <div className="h-full min-h-[500px] w-full rounded-3xl overflow-hidden border border-slate-200 relative shadow-sm">
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        zoom={13}
-        center={defaultCenter}
+        zoom={14}
+        center={smoothDriverLoc || pickupLocation}
         onLoad={onMapLoad}
         options={{
-          styles: darkMapStyle,
           disableDefaultUI: true,
-          zoomControl: true,
+          zoomControl: false,
+          gestureHandling: 'greedy',
         }}
       >
         {directions && (
           <DirectionsRenderer 
             directions={directions} 
             options={{
-              polylineOptions: {
-                strokeColor: '#22C55E',
-                strokeWeight: 6,
-                strokeOpacity: 0.8
-              }
+              polylineOptions: { 
+                strokeColor: '#000000', // Black route line as in image
+                strokeWeight: 6, 
+                strokeOpacity: 0.9 
+              },
+              preserveViewport: true,
+              suppressMarkers: true
             }}
           />
         )}
+
+        {/* Pickup Pin - Green Circle with dot */}
+        {pickupLocation?.lat && (
+          <MarkerF 
+            position={pickupLocation} 
+            icon={{
+              url: 'https://cdn-icons-png.flaticon.com/512/3515/3515254.png', // Green dot/target
+              scaledSize: new window.google.maps.Size(40, 40),
+              anchor: new window.google.maps.Point(20, 20)
+            }}
+          />
+        )}
+
+        {/* Drop Pin - Red Circle with square */}
+        {dropLocation?.lat && (
+          <MarkerF 
+            position={dropLocation} 
+            icon={{
+              url: 'https://cdn-icons-png.flaticon.com/512/3515/3515255.png', // Red square/target
+              scaledSize: new window.google.maps.Size(40, 40),
+              anchor: new window.google.maps.Point(20, 20)
+            }}
+          />
+        )}
+
+        {/* Real-time Car Icon */}
+        {smoothDriverLoc?.lat && (
+          <MarkerF 
+            position={smoothDriverLoc} 
+            icon={{
+              url: 'https://cdn-icons-png.flaticon.com/512/1048/1048315.png', // Better white car icon
+              scaledSize: new window.google.maps.Size(45, 45),
+              anchor: new window.google.maps.Point(22, 22),
+            }}
+            zIndex={999}
+          />
+        )}
       </GoogleMap>
-
-      {/* Overlay Status */}
-      <div className="absolute top-6 left-6 z-10">
-        <div className="bg-[#0F172A]/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-3 shadow-2xl">
-          <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-          <span className="text-primary font-black text-[10px] uppercase tracking-[0.2em]">{status || 'Live Tracking'}</span>
-        </div>
-      </div>
-
-      {/* Bottom Info Overlay (Optional) */}
-      <div className="absolute bottom-6 left-6 right-6 z-10 flex justify-between items-end pointer-events-none">
-        <div className="bg-[#0F172A]/80 backdrop-blur-md p-4 rounded-2xl border border-white/5 shadow-2xl pointer-events-auto">
-           <p className="text-[8px] font-black text-text-dim uppercase tracking-widest mb-1">Current Route</p>
-           <p className="text-xs font-bold text-text-main flex items-center gap-2">
-             {pickup.split(',')[0]} <span className="text-primary">→</span> {drop.split(',')[0]}
-           </p>
+      
+      {/* Status Overlay */}
+      <div className="absolute top-6 left-6 z-10 animate-in fade-in zoom-in duration-700">
+        <div className="bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex items-center gap-4">
+          <div className="relative">
+            <div className="w-2.5 h-2.5 bg-black rounded-full animate-ping absolute inset-0 opacity-20" />
+            <div className="w-2.5 h-2.5 bg-black rounded-full relative" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-slate-400 font-black text-[9px] uppercase tracking-[0.3em] leading-none mb-1">Live Telemetry</span>
+            <span className="text-black font-black text-[11px] uppercase tracking-wider">{status?.replace('_', ' ') || 'Syncing...'}</span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
-// Dark Mode Map Styles
-const darkMapStyle = [
-  { elementType: "geometry", stylers: [{ color: "#0F172A" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0F172A" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
-  {
-    featureType: "administrative.locality",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#94A3B8" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#94A3B8" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "geometry",
-    stylers: [{ color: "#1E293B" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#64748B" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#1E293B" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#334155" }],
-  },
-  {
-    featureType: "road",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#94A3B8" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#334155" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#475569" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#CBD5E1" }],
-  },
-  {
-    featureType: "transit",
-    elementType: "geometry",
-    stylers: [{ color: "#1E293B" }],
-  },
-  {
-    featureType: "transit.station",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#94A3B8" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#020617" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#334155" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#0F172A" }],
-  },
-];
 
 export default MapWidget;

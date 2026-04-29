@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2, Bus, Star, ShieldCheck } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -6,16 +6,28 @@ import MapWidget from '../components/MapWidget';
 
 const RideConfirmationPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const ride = location.state?.ride;
+
+  if (!ride) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-text-muted">No tactical confirmation found.</p>
+        <Button onClick={() => navigate('/dashboard')} className="mt-4">Back to Base</Button>
+      </div>
+    );
+  }
 
   const rideInfo = {
-    id: 'REQ-9981',
-    shuttle: 'White Toyota Coaster Luxe',
+    id: `REQ-${ride._id.slice(-4).toUpperCase()}`,
+    shuttle: 'Elite Shuttle Alpha',
     plate: 'KA-01-MJ-5542',
     driver: 'Rajesh Kumar',
-    rating: '4.8',
-    eta: '8 mins',
-    pickup: 'Main Gate, Sector 62',
-    time: '18:35'
+    rating: '4.9',
+    eta: 'Calculating...',
+    pickup: ride.pickup,
+    drop: ride.drop,
+    time: ride.time
   };
 
   return (
@@ -28,11 +40,7 @@ const RideConfirmationPage = () => {
         <p className="text-text-muted text-lg font-medium">Your elite commute is scheduled and secured.</p>
       </div>
 
-      <MapWidget 
-        status="Confirmed" 
-        pickup={rideInfo.pickup} 
-        drop="Tech Park, Bangalore" 
-      />
+      <MapWidget ride={ride} />
 
       <Card className="relative overflow-hidden group">
         {/* Progress header */}

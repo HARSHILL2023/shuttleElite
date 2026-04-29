@@ -1,66 +1,36 @@
-import { useState, useEffect } from 'react';
-import { Calendar, ChevronRight, Bus, Download, Filter, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Calendar, ChevronRight, Bus, Download, Filter, Loader2 } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import SEO from '../components/SEO';
+import { rideService } from '../services/rideService';
 import toast from 'react-hot-toast';
 
 const RideHistoryPage = () => {
   const navigate = useNavigate();
-  const [rides, setRides] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchRides();
-  }, []);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['ride-history'],
+    queryFn: rideService.getHistory,
+    select: (data) => data?.rides ?? []
+  });
 
-  const fetchRides = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("http://localhost:5000/api/rides/history", {
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        }
-      });
-      const data = await res.json();
+  const rides = data ?? [];
 
-      if (res.ok) {
-        setRides(data.rides);
-      } else {
-        const msg = data.message || "Failed to load rides";
-        setError(msg);
-        toast.error(msg);
-      }
-    } catch (err) {
-      setError("Failed to connect to backend");
-      toast.error("Network error: Server unreachable");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const updateMutation = useMutation({
+    mutationFn: ({ rideId, status }) => rideService.updateStatus(rideId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ride-history'] });
+      toast.success('Ride status updated');
+    },
+    onError: () => toast.error('Error updating status'),
+  });
 
-  const handleUpdateStatus = async (e, rideId, newStatus) => {
-    e.stopPropagation(); // Prevent card click alert
-    try {
-      const res = await fetch(`http://localhost:5000/api/rides/${rideId}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setRides(rides.map(ride => ride._id === rideId ? { ...ride, status: newStatus } : ride));
-        toast.success(`Ride status updated to ${newStatus}`);
-      } else {
-        toast.error(data.message || "Update failed");
-      }
-    } catch (err) {
-      toast.error("Error updating status");
-    }
+  const handleUpdateStatus = (e, rideId, newStatus) => {
+    e.stopPropagation();
+    updateMutation.mutate({ rideId, status: newStatus });
   };
 
   const getStatusColor = (status) => {
@@ -74,17 +44,29 @@ const RideHistoryPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-10">
+      <SEO
+        title="Mission History"
+        description="Review your complete ShuttleElite ride history, CO2 savings, and tactical operation records."
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "ShuttleElite Mission History",
+          "description": "Your personal corporate ride history with ShuttleElite."
+        }}
+      />
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-black text-text-main tracking-tighter">Ride History</h1>
-          <p className="text-text-muted font-medium mt-1">Review your past sustainable commutes</p>
+          <h1 className="text-4xl font-black text-text-main tracking-tighter uppercase italic">Mission <span className="text-primary">History</span></h1>
+          <p className="text-text-muted font-medium mt-1">Review your past elite operations</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button 
             variant="secondary" 
             className="flex-1 sm:flex-none"
-            onClick={() => toast.info('Filter features coming soon!')}
+            onClick={() => toast('Filter features coming soon!')}
+            aria-label="Filter ride history"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filter
@@ -93,6 +75,7 @@ const RideHistoryPage = () => {
             variant="outline" 
             className="flex-1 sm:flex-none"
             onClick={() => toast.loading('Generating export...', { duration: 2000 })}
+            aria-label="Export ride history"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -101,16 +84,16 @@ const RideHistoryPage = () => {
       </div>
 
       {/* History List */}
-      <div className="space-y-6">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <div className="space-y-6" role="list" aria-label="Ride history">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4" aria-live="polite">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-text-muted font-bold animate-pulse">Fetching your ride history...</p>
+            <p className="text-text-muted font-bold animate-pulse uppercase tracking-widest text-xs">Fetching operation records...</p>
           </div>
-        ) : error ? (
-          <Card className="border-red-500/20 bg-red-500/5 py-10 text-center">
-            <p className="text-red-500 font-bold mb-4">{error}</p>
-            <Button onClick={fetchRides} variant="secondary">Try Again</Button>
+        ) : isError ? (
+          <Card className="border-red-500/20 bg-red-500/5 py-10 text-center" role="alert">
+            <p className="text-red-500 font-bold mb-4">Failed to load mission history</p>
+            <Button onClick={() => refetch()} variant="secondary">Try Again</Button>
           </Card>
         ) : rides.length === 0 ? (
           <Card className="text-center py-20 bg-white/[0.02]">
@@ -119,18 +102,19 @@ const RideHistoryPage = () => {
                 <Bus className="w-10 h-10 text-text-dim" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-text-main">No rides yet</h3>
-                <p className="text-text-muted mt-2">Your sustainable commute journey begins here.</p>
+                <h3 className="text-2xl font-bold text-text-main">No missions recorded</h3>
+                <p className="text-text-muted mt-2">Your elite operation log is empty.</p>
               </div>
-              <Button onClick={() => navigate('/request')} className="mt-4">
-                Book Your First Ride
+              <Button onClick={() => navigate('/request')} className="mt-4" aria-label="Book your first ride">
+                Deploy First Mission
               </Button>
             </div>
           </Card>
         ) : rides.map((ride) => (
           <Card 
-            key={ride._id} 
-            onClick={() => toast.success(`View Details: REQ-${ride._id.slice(-4).toUpperCase()}`)}
+            key={ride._id}
+            role="listitem"
+            onClick={() => toast.success(`Operation: REQ-${ride._id.slice(-4).toUpperCase()}`)}
             className="group relative overflow-hidden transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -156,12 +140,12 @@ const RideHistoryPage = () => {
               </div>
 
               <div className="flex-1 md:px-8 border-l border-white/5 space-y-3">
-                <div className="flex items-center gap-3 group/item">
-                  <div className="w-2.5 h-2.5 rounded-full border-2 border-primary group-hover/item:scale-125 transition-transform" />
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full border-2 border-primary" />
                   <span className="text-text-main font-bold tracking-tight text-sm">{ride.pickup}</span>
                 </div>
-                <div className="flex items-center gap-3 group/item">
-                  <div className="w-2.5 h-2.5 rounded-full border-2 border-red-400 group-hover/item:scale-125 transition-transform" />
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full border-2 border-red-400" />
                   <span className="text-text-main font-bold tracking-tight text-sm">{ride.drop}</span>
                 </div>
               </div>
@@ -171,12 +155,13 @@ const RideHistoryPage = () => {
                   <p className="text-[10px] font-black text-text-dim uppercase tracking-widest">CO2 Saved</p>
                   <p className="text-lg font-black text-primary tracking-tighter">3.2kg</p>
                 </div>
-                
                 <div className="flex items-center gap-4">
                   {ride.status !== 'completed' && (
                     <button 
                       onClick={(e) => handleUpdateStatus(e, ride._id, 'completed')}
-                      className="text-[10px] font-black text-primary uppercase tracking-widest border border-primary/20 bg-primary/5 hover:bg-primary hover:text-black px-3 py-1.5 rounded-lg transition-all"
+                      disabled={updateMutation.isPending}
+                      aria-label="Mark ride as completed"
+                      className="text-[10px] font-black text-primary uppercase tracking-widest border border-primary/20 bg-primary/5 hover:bg-primary hover:text-black px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
                     >
                       Complete
                     </button>
@@ -191,10 +176,9 @@ const RideHistoryPage = () => {
         ))}
       </div>
 
-      {/* Pagination / Load More */}
       {rides.length > 0 && (
         <div className="pt-10 flex flex-col items-center gap-4">
-          <p className="text-text-dim text-sm font-bold uppercase tracking-[0.2em]">End of History</p>
+          <p className="text-text-dim text-sm font-bold uppercase tracking-[0.2em]">End of Records</p>
           <div className="w-12 h-1 bg-white/5 rounded-full" />
         </div>
       )}

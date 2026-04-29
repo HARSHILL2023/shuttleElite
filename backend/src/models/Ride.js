@@ -24,8 +24,26 @@ const rideSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "confirmed", "completed"],
-    default: "pending"
+    enum: ["searching", "assigned", "arriving", "ongoing", "completed"],
+    default: "searching"
+  },
+  driverLocation: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  pickupLocation: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  dropLocation: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  driverInfo: {
+    name: { type: String, default: "Rajesh Kumar" },
+    phone: { type: String, default: "+91 9876543210" },
+    rating: { type: Number, default: 4.8 },
+    shuttlePlate: { type: String, default: "KA-01-MJ-5542" }
   }
 }, { timestamps: true });
 

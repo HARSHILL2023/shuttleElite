@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { requestRide, getRideHistory, updateRideStatus } = require('../controllers/rideController');
+const { requestRide, getRideHistory, updateRideStatus, getActiveRide } = require('../controllers/rideController');
 const authMiddleware = require('../middleware/authMiddleware');
+
+// GET /api/rides/active (Must be before parameterized routes)
+router.get('/active', authMiddleware, getActiveRide);
 
 // POST /api/rides/request
 router.post('/request', authMiddleware, requestRide);

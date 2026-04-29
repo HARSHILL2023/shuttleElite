@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap link
+Sitemap: https://shuttleelite.com/sitemap.xml
