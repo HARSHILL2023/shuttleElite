@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import toast from 'react-hot-toast';
+import SEO from '../components/SEO';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ const LoginPage = () => {
 
   return (
     <div className="flex items-center justify-center">
+      <SEO title="Secure Login" description="Authenticate your elite corporate session to access the ShuttleElite network." />
       <Card className="w-full max-w-[440px] shadow-[0_0_80px_rgba(0,0,0,0.6)] border-white/[0.03] relative overflow-hidden group py-10 px-8">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-50" />

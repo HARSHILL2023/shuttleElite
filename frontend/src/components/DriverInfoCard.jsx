@@ -1,62 +1,51 @@
-
-import { Phone, MessageSquare, ShieldCheck, Star } from 'lucide-react';
+import { Phone, MapPin, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const DriverInfoCard = () => {
+const DriverInfoCard = ({ ride }) => {
+  const getSinceTime = () => "20 mins ago";
+
   return (
-    <div className="space-y-6 mt-8 pt-8 border-t border-white/5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <img 
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
-              alt="Driver" 
-              className="w-14 h-14 rounded-2xl bg-card-hover border border-border"
-            />
-            <div className="absolute -bottom-1 -right-1 bg-primary p-1 rounded-lg border-2 border-card">
-              <ShieldCheck className="w-3 h-3 text-black" />
-            </div>
-          </div>
-          <div>
-            <h4 className="text-text-main font-bold">Rajesh Kumar</h4>
-            <div className="flex items-center gap-1.5 text-xs text-text-muted font-semibold mt-0.5">
-              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-              4.9 • 2,400+ Rides
-            </div>
+    <div className="bg-white p-4 border-t border-slate-100 animate-in slide-in-from-bottom duration-500">
+      <div className="flex items-center gap-4">
+        {/* Profile Pic */}
+        <div className="relative shrink-0">
+          <img 
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jasbeer" 
+            alt="Driver" 
+            className="w-16 h-16 rounded-full bg-slate-100 object-cover border-2 border-white shadow-sm"
+          />
+        </div>
+
+        {/* Driver & Car Info */}
+        <div className="flex-1 min-w-0">
+          <h4 className="text-xl font-black text-slate-800 truncate tracking-tight leading-none">Jasbeer Singh Bhullar</h4>
+          <p className="text-[10px] text-slate-500 font-black truncate uppercase tracking-[0.1em] mt-2">
+            KA12 W 3456 • {ride?.driverInfo?.shuttlePlate || 'KA-01-MJ-5542'}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Logged in 10:00 AM</p>
+            <span className="w-1 h-1 bg-slate-200 rounded-full" />
+            <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider">5th Ride Today</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => toast.info('Initiating secure VOIP call...')}
-            className="p-3 bg-white/5 hover:bg-primary/10 hover:text-primary border border-white/5 rounded-2xl transition-all"
-          >
-            <Phone className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => toast.info('Opening secure encrypted chat...')}
-            className="p-3 bg-white/5 hover:bg-primary/10 hover:text-primary border border-white/5 rounded-2xl transition-all"
-          >
-            <MessageSquare className="w-5 h-5" />
-          </button>
-        </div>
+
+        {/* Call Button */}
+        <button 
+          onClick={() => toast.success('Initiating call to Jasbeer...')}
+          className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors shadow-sm text-slate-600"
+        >
+          <Phone size={20} className="fill-slate-100" />
+        </button>
       </div>
 
-      <div className="bg-white/5 p-5 rounded-2xl space-y-4 border border-white/5">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-text-muted font-medium">Shuttle ID</span>
-          <span className="font-bold text-text-main font-mono">SH-204 (KA-01-MJ-5542)</span>
+      {/* Status Bar */}
+      <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-50">
+        <div className="bg-green-600 text-white text-[9px] font-black px-3 py-1 rounded-sm uppercase tracking-[0.15em]">
+          IN BOOKING
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-text-muted font-medium">Model</span>
-          <span className="font-bold text-text-main">Toyota Coaster Luxe</span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-text-muted font-medium">Occupancy</span>
-          <div className="flex gap-1.5">
-            {[1,2,3,4].map(i => <div key={i} className="w-2.5 h-2.5 rounded-full bg-primary/60 shadow-[0_0_8px_rgba(34,197,94,0.3)]" />)}
-            {[1].map(i => <div key={i} className="w-2.5 h-2.5 rounded-full bg-white/10" />)}
-          </div>
-        </div>
+        <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">
+          Active {getSinceTime()} • {ride?.status?.replace('_', ' ')}
+        </p>
       </div>
     </div>
   );
