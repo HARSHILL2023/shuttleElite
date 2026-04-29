@@ -3,19 +3,19 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const authRoutes = require('./routes/authRoutes');
-const rideRoutes = require('./routes/rideRoutes');
+const authRoutes = require('./src/routes/authRoutes');
+const rideRoutes = require('./src/routes/rideRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/shuttleelite')
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+const connectDB = require("./src/config/db");
 
 app.use(cors());
 app.use(express.json());
+
+
+
+connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
