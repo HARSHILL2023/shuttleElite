@@ -1,7 +1,8 @@
-  import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Bus, Star, ShieldCheck } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import MapWidget from '../components/MapWidget';
 
 const RideConfirmationPage = () => {
   const navigate = useNavigate();
@@ -26,6 +27,12 @@ const RideConfirmationPage = () => {
         <h1 className="text-5xl font-black text-text-main tracking-tighter">Ride Confirmed!</h1>
         <p className="text-text-muted text-lg font-medium">Your elite commute is scheduled and secured.</p>
       </div>
+
+      <MapWidget 
+        status="Confirmed" 
+        pickup={rideInfo.pickup} 
+        drop="Tech Park, Bangalore" 
+      />
 
       <Card className="relative overflow-hidden group">
         {/* Progress header */}
