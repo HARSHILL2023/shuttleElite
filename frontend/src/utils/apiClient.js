@@ -7,7 +7,7 @@ if (!import.meta.env.VITE_API_URL) {
 }
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://shuttleelite.onrender.com',
+  baseURL: `${(import.meta.env.VITE_API_URL || 'https://shuttleelite.onrender.com').replace(/\/$/, '')}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
