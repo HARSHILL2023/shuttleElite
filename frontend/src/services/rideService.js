@@ -6,10 +6,8 @@ export const rideService = {
     return res.data;
   },
 
-  async requestRide(pickup, drop, date, time, pickupLocation, dropLocation) {
-    const res = await apiClient.post('/rides/request', { 
-      pickup, drop, date, time, pickupLocation, dropLocation 
-    });
+  async requestRide(rideData) {
+    const res = await apiClient.post('/rides/request', rideData);
     return res.data;
   },
 

@@ -7,15 +7,23 @@ const rideSchema = new mongoose.Schema({
     required: true
   },
   pickup: {
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
+  },
+  drop: {
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
+  },
+  pickupName: {
     type: String,
     required: true
   },
-  drop: {
+  dropName: {
     type: String,
     required: true
   },
   date: {
-    type: String, // Keeping as String as requested
+    type: String,
     required: true
   },
   time: {
@@ -27,10 +35,15 @@ const rideSchema = new mongoose.Schema({
     enum: ["searching", "assigned", "arriving", "ongoing", "completed"],
     default: "searching"
   },
+  routePath: [{
+    lat: { type: Number },
+    lng: { type: Number }
+  }],
   driverLocation: {
     lat: { type: Number },
     lng: { type: Number }
   },
+  // Legacy fields - keeping for backward compatibility if needed, but we'll use pickup/drop
   pickupLocation: {
     lat: { type: Number },
     lng: { type: Number }

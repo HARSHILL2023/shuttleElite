@@ -31,7 +31,7 @@ const Dashboard = () => {
   const loading = userLoading || historyLoading || rideLoading;
 
   const stats = [
-    { label: 'Total Rides', value: history.length, icon: Bus, trend: `Last: ${history[0]?.date || 'None'}`, color: 'text-primary' },
+    { label: 'Shuttle Trips', value: history.length, icon: Bus, trend: `Last: ${history[0]?.date || 'None'}`, color: 'text-primary' },
     { label: 'CO2 Saved', value: `${(history.length * 3.2).toFixed(1)}kg`, icon: TrendingUp, trend: 'Net Zero Target', color: 'text-blue-400' },
     { label: 'Elite Points', value: (history.length * 50).toLocaleString(), icon: Star, trend: 'Gold Tier', color: 'text-yellow-400' },
   ];
@@ -63,14 +63,17 @@ const Dashboard = () => {
       
       {/* Welcome Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Operations Hub</p>
-          <h1 className="text-5xl md:text-6xl font-black text-text-main tracking-tighter uppercase italic leading-[0.9]">
-            Welcome, <span className="text-primary">{user?.name?.split(' ')[0] || 'Agent'}</span>
-          </h1>
-          <p className="text-text-muted text-lg font-semibold tracking-tight">
-            {activeRide ? "Active mission in progress. Live tracking enabled." : "System standby. Ready for your next deployment."}
-          </p>
+        <div className="flex items-center gap-6">
+          <img src="/shuttle_logo.png" alt="ShuttleElite Logo" className="w-16 h-16 rounded-2xl shadow-2xl shadow-primary/20 border border-primary/20" />
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Operations Hub</p>
+            <h1 className="text-5xl md:text-6xl font-black text-text-main tracking-tighter uppercase italic leading-[0.9]">
+              Welcome, <span className="text-primary">{user?.name?.split(' ')[0] || 'Agent'}</span>
+            </h1>
+            <p className="text-text-muted text-lg font-semibold tracking-tight">
+              {activeRide ? "Active mission in progress. Live tracking enabled." : "System standby. Ready for your next deployment."}
+            </p>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           {activeRide ? (
@@ -85,11 +88,11 @@ const Dashboard = () => {
           ) : (
             <Button 
               onClick={() => navigate('/request')} 
-              aria-label="Initiate new ride request"
+              aria-label="Initiate new shuttle booking"
               className="md:h-16 h-14 px-10 text-lg font-black tracking-widest shadow-[0_10px_30px_rgba(34,197,94,0.2)] hover:translate-y-[-2px] transition-all"
             >
-              <Zap className="w-5 h-5 mr-2 fill-current" />
-              BOOK NEW RIDE
+              <Bus className="w-5 h-5 mr-2" />
+              BOOK SHUTTLE
             </Button>
           )}
         </div>
@@ -134,7 +137,7 @@ const Dashboard = () => {
                       <Bus size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-text-main uppercase tracking-tight">{ride.pickup} → {ride.drop}</p>
+                      <p className="text-sm font-black text-text-main uppercase tracking-tight">{ride.pickupName} → {ride.dropName}</p>
                       <p className="text-xs text-text-muted font-semibold mt-0.5">{ride.date} • {ride.time}</p>
                     </div>
                   </div>

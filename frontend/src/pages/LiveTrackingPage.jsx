@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Clock, ShieldCheck, MapPin, Zap, Settings } from 'lucide-react';
+import { ChevronLeft, Clock, ShieldCheck, MapPin, Zap, Settings, Bus } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import MapWidget from '../components/MapWidget';
@@ -28,23 +28,36 @@ const LiveTrackingPage = () => {
     }
   };
 
-  const getETA = () => {
-    if (!activeRide || !activeRide.driverLocation) return 0;
-    const target = activeRide.status === 'arriving' ? activeRide.pickupLocation : activeRide.dropLocation;
-    if (!target) return 0;
+  const getDistance = () => {
+    if (!activeRide || !activeRide.driverLocation) return "0.0";
+    const target = activeRide.status === 'arriving' ? activeRide.pickup : activeRide.drop;
+    if (!target) return "0.0";
     
-    const dist = Math.sqrt(
-      Math.pow(activeRide.driverLocation.lat - target.lat, 2) + 
-      Math.pow(activeRide.driverLocation.lng - target.lng, 2)
-    );
-    return Math.max(1, Math.ceil(dist / 0.001));
+    // Haversine formula for distance in km
+    const R = 6371;
+    const dLat = (target.lat - activeRide.driverLocation.lat) * Math.PI / 180;
+    const dLon = (target.lng - activeRide.driverLocation.lng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(activeRide.driverLocation.lat * Math.PI / 180) * Math.cos(target.lat * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+    return d.toFixed(1);
+  };
+
+  const getETA = () => {
+    const dist = parseFloat(getDistance());
+    // Assume 30km/h average city speed for simulation
+    const minutes = Math.max(1, Math.ceil((dist / 30) * 60));
+    return minutes;
   };
 
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-4 flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-        <p className="text-text-muted font-bold animate-pulse uppercase tracking-[0.2em]">Syncing active ride...</p>
+        <p className="text-text-muted font-bold animate-pulse uppercase tracking-[0.2em]">Syncing tactical feed...</p>
       </div>
     );
   }
@@ -123,17 +136,17 @@ const LiveTrackingPage = () => {
           
           {/* Floating ETA Overlay */}
           <div className="absolute bottom-6 left-6 right-6 md:right-auto z-10">
-            <div className="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-2xl flex items-center gap-5 animate-in slide-in-from-bottom-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 flex flex-col items-center justify-center text-blue-600 border border-blue-100">
+            <div className="bg-slate-900/90 backdrop-blur-xl p-4 rounded-[2rem] border border-white/10 shadow-2xl flex items-center gap-5 animate-in slide-in-from-bottom-4 text-white">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex flex-col items-center justify-center text-primary border border-primary/20">
                 <span className="text-xl font-black leading-none">{getETA()}</span>
                 <span className="text-[8px] font-black uppercase tracking-tighter mt-1">Min</span>
               </div>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] leading-none mb-1.5">Arrival Time</p>
-                <p className="text-sm font-black text-slate-800 tracking-tight">
-                  {activeRide.status === 'arriving' ? 'To Pickup Point' : 
-                   activeRide.status === 'ongoing' ? 'To Destination' : 
-                   'Tracking Objective...'}
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] leading-none mb-1.5">Shuttle Arrival</p>
+                <p className="text-sm font-black text-white tracking-tight uppercase italic">
+                  {activeRide.status === 'arriving' ? 'Arriving at Node' : 
+                   activeRide.status === 'ongoing' ? 'En Route to Destination' : 
+                   'Synchronizing...'}
                 </p>
               </div>
             </div>
@@ -146,13 +159,13 @@ const LiveTrackingPage = () => {
             <div className="p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Operation</p>
-                  <p className="text-xl font-bold text-slate-800 tracking-tight capitalize">
+                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">System Live</p>
+                  <p className="text-xs text-text-muted font-bold uppercase tracking-widest">
                     {activeRide.status.replace('_', ' ')}
                   </p>
                 </div>
-                <div className="p-2 bg-blue-50 rounded-xl border border-blue-100">
-                  <Zap className="text-blue-500 w-5 h-5 fill-current" />
+                <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
+                  <Bus className="text-primary w-5 h-5" />
                 </div>
               </div>
 
@@ -164,14 +177,14 @@ const LiveTrackingPage = () => {
                   </div>
                   <div className="flex-1">
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pickup</p>
-                    <p className="text-xs font-bold text-slate-800 truncate">{activeRide.pickup}</p>
+                    <p className="text-xs font-bold text-slate-800 truncate">{activeRide.pickupName}</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
                   <div className="flex-1">
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Destination</p>
-                    <p className="text-xs font-bold text-slate-800 truncate">{activeRide.drop}</p>
+                    <p className="text-xs font-bold text-slate-800 truncate">{activeRide.dropName}</p>
                   </div>
                 </div>
               </div>
@@ -185,12 +198,12 @@ const LiveTrackingPage = () => {
               variant="outline" 
               className="w-full h-12 rounded-xl border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all"
               onClick={() => {
-                if(confirm('Cancel this ride?')) {
+                if(confirm('Cancel this shuttle booking?')) {
                   handleStatusUpdate('completed');
                 }
               }}
             >
-              Cancel Operation
+              Cancel Shuttle Booking
             </Button>
           </div>
         </div>

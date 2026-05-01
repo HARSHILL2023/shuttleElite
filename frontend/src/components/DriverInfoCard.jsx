@@ -1,4 +1,4 @@
-import { Phone, MapPin, Star } from 'lucide-react';
+import { Phone, MapPin, Star, Bus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DriverInfoCard = ({ ride }) => {
@@ -7,18 +7,21 @@ const DriverInfoCard = ({ ride }) => {
   return (
     <div className="bg-white p-4 border-t border-slate-100 animate-in slide-in-from-bottom duration-500">
       <div className="flex items-center gap-4">
-        {/* Profile Pic */}
+        {/* Bus Profile Pic */}
         <div className="relative shrink-0">
           <img 
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jasbeer" 
-            alt="Driver" 
-            className="w-16 h-16 rounded-full bg-slate-100 object-cover border-2 border-white shadow-sm"
+            src="/bus.png" 
+            alt="Shuttle Elite Bus" 
+            className="w-16 h-16 p-1 rounded-2xl bg-slate-900 object-contain border-2 border-primary shadow-lg shadow-primary/10"
           />
+          <div className="absolute -bottom-1 -right-1 bg-primary text-slate-900 rounded-full p-1 border-2 border-white">
+             <Bus size={10} fill="currentColor" />
+          </div>
         </div>
 
-        {/* Driver & Car Info */}
+        {/* Bus Info */}
         <div className="flex-1 min-w-0">
-          <h4 className="text-xl font-black text-slate-800 truncate tracking-tight leading-none">Jasbeer Singh Bhullar</h4>
+          <h4 className="text-xl font-black text-slate-800 truncate tracking-tight leading-none uppercase italic">SHUTTLE <span className="text-primary">ELITE-01</span></h4>
           <p className="text-[10px] text-slate-500 font-black truncate uppercase tracking-[0.1em] mt-2">
             KA12 W 3456 • {ride?.driverInfo?.shuttlePlate || 'KA-01-MJ-5542'}
           </p>

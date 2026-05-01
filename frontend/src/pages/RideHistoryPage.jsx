@@ -71,15 +71,6 @@ const RideHistoryPage = () => {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Button 
-            variant="outline" 
-            className="flex-1 sm:flex-none"
-            onClick={() => toast.loading('Generating export...', { duration: 2000 })}
-            aria-label="Export ride history"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
         </div>
       </div>
 
@@ -142,11 +133,11 @@ const RideHistoryPage = () => {
               <div className="flex-1 md:px-8 border-l border-white/5 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full border-2 border-primary" />
-                  <span className="text-text-main font-bold tracking-tight text-sm">{ride.pickup}</span>
+                  <span className="text-text-main font-bold tracking-tight text-sm">{ride.pickupName}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full border-2 border-red-400" />
-                  <span className="text-text-main font-bold tracking-tight text-sm">{ride.drop}</span>
+                  <span className="text-text-main font-bold tracking-tight text-sm">{ride.dropName}</span>
                 </div>
               </div>
 

@@ -6,7 +6,7 @@ const libraries = ['places'];
 const mapContainerStyle = { width: '100%', height: '100%' };
 
 const MapWidget = ({ ride }) => {
-  const { driverLocation, pickupLocation, dropLocation, status } = ride;
+  const { driverLocation, pickup, drop, status, pickupName, dropName } = ride;
   
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -18,29 +18,38 @@ const MapWidget = ({ ride }) => {
   const [smoothDriverLoc, setSmoothDriverLoc] = useState(driverLocation);
   const animationRef = useRef(null);
 
-  // Directions logic
+  // Directions logic - Clear on change
   useEffect(() => {
-    if (isLoaded && pickupLocation?.lat && dropLocation?.lat) {
+    if (!isLoaded) return;
+    
+    // Reset directions when locations change to prevent stale routes
+    setDirections(null);
+
+    if (pickup?.lat && drop?.lat) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
         {
-          origin: new window.google.maps.LatLng(pickupLocation.lat, pickupLocation.lng),
-          destination: new window.google.maps.LatLng(dropLocation.lat, dropLocation.lng),
+          origin: new window.google.maps.LatLng(pickup.lat, pickup.lng),
+          destination: new window.google.maps.LatLng(drop.lat, drop.lng),
           travelMode: window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK) {
             setDirections(result);
+          } else {
+            console.error("Tactical failure: Routing failed.", status);
           }
         }
       );
     }
-  }, [isLoaded, pickupLocation, dropLocation]);
+  }, [isLoaded, pickup?.lat, pickup?.lng, drop?.lat, drop?.lng]);
 
   // Smooth Movement (LERP)
   useEffect(() => {
     if (!driverLocation?.lat) return;
-    if (!smoothDriverLoc) {
+    
+    // If smooth location is too far or not set, jump to current
+    if (!smoothDriverLoc || Math.abs(smoothDriverLoc.lat - driverLocation.lat) > 0.1) {
       setSmoothDriverLoc(driverLocation);
       return;
     }
@@ -76,32 +85,43 @@ const MapWidget = ({ ride }) => {
     if (map && isLoaded) {
       const bounds = new window.google.maps.LatLngBounds();
       let hasData = false;
-      if (pickupLocation?.lat) { bounds.extend(pickupLocation); hasData = true; }
-      if (dropLocation?.lat) { bounds.extend(dropLocation); hasData = true; }
+      if (pickup?.lat) { bounds.extend(pickup); hasData = true; }
+      if (drop?.lat) { bounds.extend(drop); hasData = true; }
       if (smoothDriverLoc?.lat) { bounds.extend(smoothDriverLoc); hasData = true; }
       
       if (hasData) {
         map.fitBounds(bounds, { top: 100, bottom: 250, left: 50, right: 50 });
       }
     }
-  }, [map, isLoaded, pickupLocation, dropLocation, smoothDriverLoc]);
+  }, [map, isLoaded, pickup, drop, smoothDriverLoc]);
 
   const onMapLoad = (mapInstance) => setMap(mapInstance);
 
-  if (loadError) return <div className="h-full w-full bg-slate-50 rounded-3xl flex items-center justify-center text-red-500 font-bold">Map Loading Failed</div>;
-  if (!isLoaded) return <div className="h-full w-full bg-slate-50 animate-pulse rounded-3xl flex items-center justify-center font-bold text-slate-300">Initializing Map Engine...</div>;
+  if (loadError) return <div className="h-full w-full bg-slate-900 rounded-3xl flex items-center justify-center text-red-500 font-bold border border-red-500/20 uppercase tracking-widest">Satellite Feed Offline</div>;
+  if (!isLoaded) return <div className="h-full w-full bg-slate-900/50 animate-pulse rounded-3xl flex items-center justify-center font-bold text-primary/40 uppercase tracking-[0.4em]">Initializing Tactical Map...</div>;
 
   return (
-    <div className="h-full min-h-[500px] w-full rounded-3xl overflow-hidden border border-slate-200 relative shadow-sm">
+    <div className="h-full min-h-[500px] w-full rounded-3xl overflow-hidden border border-white/5 relative shadow-2xl bg-slate-950">
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         zoom={14}
-        center={smoothDriverLoc || pickupLocation}
+        center={smoothDriverLoc || pickup}
         onLoad={onMapLoad}
         options={{
           disableDefaultUI: true,
           zoomControl: false,
           gestureHandling: 'greedy',
+          styles: [
+            { elementType: "geometry", stylers: [{ color: "#212121" }] },
+            { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
+            { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
+            { featureType: "poi", elementType: "geometry", stylers: [{ color: "#121212" }] },
+            { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] },
+            { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
+            { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] },
+          ],
         }}
       >
         {directions && (
@@ -109,9 +129,9 @@ const MapWidget = ({ ride }) => {
             directions={directions} 
             options={{
               polylineOptions: { 
-                strokeColor: '#000000', // Black route line as in image
-                strokeWeight: 6, 
-                strokeOpacity: 0.9 
+                strokeColor: '#22c55e', // Elite Green route
+                strokeWeight: 5, 
+                strokeOpacity: 0.8 
               },
               preserveViewport: true,
               suppressMarkers: true
@@ -119,38 +139,40 @@ const MapWidget = ({ ride }) => {
           />
         )}
 
-        {/* Pickup Pin - Green Circle with dot */}
-        {pickupLocation?.lat && (
+        {/* Pickup Pin */}
+        {pickup?.lat && (
           <MarkerF 
-            position={pickupLocation} 
+            position={pickup} 
+            title={`Pickup Node: ${pickupName}`}
             icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/3515/3515254.png', // Green dot/target
+              url: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png', // Bus stop icon
               scaledSize: new window.google.maps.Size(40, 40),
               anchor: new window.google.maps.Point(20, 20)
             }}
           />
         )}
 
-        {/* Drop Pin - Red Circle with square */}
-        {dropLocation?.lat && (
+        {/* Drop Pin */}
+        {drop?.lat && (
           <MarkerF 
-            position={dropLocation} 
+            position={drop} 
+            title={`Destination Node: ${dropName}`}
             icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/3515/3515255.png', // Red square/target
+              url: 'https://cdn-icons-png.flaticon.com/512/619/619032.png', // Office building icon
               scaledSize: new window.google.maps.Size(40, 40),
               anchor: new window.google.maps.Point(20, 20)
             }}
           />
         )}
 
-        {/* Real-time Car Icon */}
+        {/* Real-time Bus Icon */}
         {smoothDriverLoc?.lat && (
           <MarkerF 
             position={smoothDriverLoc} 
             icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/1048/1048315.png', // Better white car icon
-              scaledSize: new window.google.maps.Size(45, 45),
-              anchor: new window.google.maps.Point(22, 22),
+              url: '/bus.png', // Local shuttle asset
+              scaledSize: new window.google.maps.Size(60, 60),
+              anchor: new window.google.maps.Point(30, 30),
             }}
             zIndex={999}
           />
@@ -159,14 +181,14 @@ const MapWidget = ({ ride }) => {
       
       {/* Status Overlay */}
       <div className="absolute top-6 left-6 z-10 animate-in fade-in zoom-in duration-700">
-        <div className="bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex items-center gap-4">
+        <div className="bg-slate-900/90 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4">
           <div className="relative">
-            <div className="w-2.5 h-2.5 bg-black rounded-full animate-ping absolute inset-0 opacity-20" />
-            <div className="w-2.5 h-2.5 bg-black rounded-full relative" />
+            <div className="w-2.5 h-2.5 bg-primary rounded-full animate-ping absolute inset-0 opacity-20" />
+            <div className="w-2.5 h-2.5 bg-primary rounded-full relative" />
           </div>
           <div className="flex flex-col">
-            <span className="text-slate-400 font-black text-[9px] uppercase tracking-[0.3em] leading-none mb-1">Live Telemetry</span>
-            <span className="text-black font-black text-[11px] uppercase tracking-wider">{status?.replace('_', ' ') || 'Syncing...'}</span>
+            <span className="text-slate-500 font-black text-[9px] uppercase tracking-[0.3em] leading-none mb-1">Shuttle Status</span>
+            <span className="text-white font-black text-[11px] uppercase tracking-wider">{status?.replace('_', ' ') || 'Syncing...'}</span>
           </div>
         </div>
       </div>

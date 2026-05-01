@@ -1,19 +1,23 @@
 const Ride = require('../models/Ride');
 
-// Helper to move driver closer to target with more realism
-const moveDriver = (current, target, lastUpdate) => {
-  if (!current || !target) return current;
+// Helper to move driver along a road path
+const moveDriverAlongPath = (current, path) => {
+  if (!path || path.length === 0) return current;
   
-  // Calculate distance
+  // Find the next point in the path that we haven't reached yet
+  // We'll move towards the first point in the array and remove it once reached
+  const target = path[0];
   const dLat = target.lat - current.lat;
   const dLng = target.lng - current.lng;
   const distance = Math.sqrt(dLat * dLat + dLng * dLng);
   
-  if (distance < 0.0001) return target; // Already there
+  if (distance < 0.00005) {
+    path.shift(); // Reached this waypoint
+    return path.length > 0 ? path[0] : target;
+  }
 
-  // Move a fixed step for demo purposes, but we could make it time-based
-  // Here we'll stick to a slightly larger step to make the demo "fast"
-  const step = 0.0008; 
+  // Even slower, smooth movement for extreme shuttle realism
+  const step = 0.00004; 
   const ratio = Math.min(step / distance, 1);
   
   return {
@@ -26,15 +30,19 @@ const moveDriver = (current, target, lastUpdate) => {
 // @route   POST /api/rides/request
 const requestRide = async (req, res) => {
   try {
-    const { pickup, drop, date, time, pickupLocation, dropLocation } = req.body;
+    const { pickup, drop, pickupName, dropName, date, time } = req.body;
     const userId = req.user.userId;
 
-    // Strict validation: Coordinates must be provided by the geocoded frontend request
-    if (!pickupLocation || !dropLocation || !pickupLocation.lat || !dropLocation.lat) {
-      return res.status(400).json({ message: "Strategic error: Geocoding failed or location data missing." });
+    // 1. Strict validation for coordinates (As requested: ensure lat exists)
+    if (!pickup?.lat || !drop?.lat || !pickup?.lng || !drop?.lng) {
+      return res.status(400).json({ message: "Strategic error: Invalid tactical coordinates." });
     }
 
-    // 1. Check for existing active ride
+    if (pickupName === dropName) {
+      return res.status(400).json({ message: "Strategic failure: Pickup and Destination cannot be identical." });
+    }
+
+    // 2. Check for existing active ride
     const activeRide = await Ride.findOne({ 
       user: userId, 
       status: { $ne: "completed" } 
@@ -42,38 +50,48 @@ const requestRide = async (req, res) => {
 
     if (activeRide) {
       return res.status(400).json({ 
-        message: "You already have an active ride request.",
+        message: "You already have an active tactical operation in progress.",
         ride: activeRide 
       });
     }
 
-    // 2. Generate driver location (Simulated near pickup)
-    // Driver starts a bit away from pickup (within ~500m)
+    // 3. Generate driver location (Simulated near pickup)
     const driverLoc = { 
-      lat: pickupLocation.lat + (Math.random() - 0.5) * 0.005, 
-      lng: pickupLocation.lng + (Math.random() - 0.5) * 0.005 
+      lat: pickup.lat + (Math.random() - 0.5) * 0.002, 
+      lng: pickup.lng + (Math.random() - 0.5) * 0.002 
     };
+
+    // 4. Tactical Road Path Initialization
+    // For this demo, we'll create a realistic road path between Home and Office
+    // Instead of a straight line, we follow an L-shaped street pattern
+    const roadPath = [
+      { lat: 23.0225, lng: 72.5714 }, // Home
+      { lat: 23.0250, lng: 72.5714 }, // Turn 1
+      { lat: 23.0250, lng: 72.5800 }, // Turn 2
+      { lat: 23.0300, lng: 72.5800 }, // Office
+    ];
 
     const newRide = new Ride({
       user: userId,
       pickup,
       drop,
+      pickupName,
+      dropName,
       date,
       time,
       status: "searching",
-      pickupLocation: pickupLocation,
-      dropLocation: dropLocation,
-      driverLocation: driverLoc
+      driverLocation: driverLoc,
+      routePath: roadPath
     });
 
     const savedRide = await newRide.save();
 
     res.status(201).json({
-      message: "Ride request initiated",
+      message: "Tactical deployment initiated",
       ride: savedRide
     });
   } catch (error) {
-    res.status(500).json({ message: "Error booking ride", error: error.message });
+    res.status(500).json({ message: "Strategic failure during deployment", error: error.message });
   }
 };
 
@@ -91,7 +109,6 @@ const getActiveRide = async (req, res) => {
       return res.status(200).json({ ride: null });
     }
 
-    // 3. Driver Simulation Logic (Updates on each fetch for demo simplicity)
     let hasChanges = false;
     
     // Auto-transition for demo flow
@@ -103,23 +120,33 @@ const getActiveRide = async (req, res) => {
       hasChanges = true;
     }
 
-    if (ride.status === "arriving") {
-      const newLoc = moveDriver(ride.driverLocation, ride.pickupLocation);
-      if (newLoc.lat === ride.pickupLocation.lat && newLoc.lng === ride.pickupLocation.lng) {
-        ride.status = "ongoing"; // Driver reached pickup, start ride
+    if (ride.status === "arriving" || ride.status === "ongoing") {
+      const newLoc = moveDriverAlongPath(ride.driverLocation, ride.routePath);
+      
+      // If path is empty, we reached the target of that phase
+      if (ride.routePath.length === 0) {
+        if (ride.status === "arriving") {
+          ride.status = "ongoing";
+          // Re-initialize road path for the trip to destination
+          ride.routePath = [
+            { lat: 23.0225, lng: 72.5714 }, // Pickup (Home)
+            { lat: 23.0250, lng: 72.5714 }, // Mid 1
+            { lat: 23.0250, lng: 72.5800 }, // Mid 2
+            { lat: 23.0300, lng: 72.5800 }, // Drop (Office)
+          ];
+          hasChanges = true;
+        } else {
+          ride.status = "completed";
+          hasChanges = true;
+        }
       }
-      ride.driverLocation = newLoc;
-      hasChanges = true;
-    } else if (ride.status === "ongoing") {
-      const newLoc = moveDriver(ride.driverLocation, ride.dropLocation);
-      if (newLoc.lat === ride.dropLocation.lat && newLoc.lng === ride.dropLocation.lng) {
-        ride.status = "completed"; // Driver reached destination
-      }
+      
       ride.driverLocation = newLoc;
       hasChanges = true;
     }
 
     if (hasChanges) {
+      ride.markModified('routePath'); // Ensure array changes are saved
       await ride.save();
     }
 
